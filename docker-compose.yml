@@ -1,0 +1,22 @@
+services:
+  front:
+    container_name: orion-microcrm-front-container
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: front
+    image: orion-microcrm-front:latest
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+  back:
+    container_name: orion-microcrm-back-container
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: back
+    image: orion-microcrm-back:latest
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

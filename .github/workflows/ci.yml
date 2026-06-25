@@ -1,0 +1,206 @@
+name: cicd.yml
+
+on:
+  push:
+    branches: ["develop"]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_BACK: ${{ github.repository }}/orion-microcrm-back
+  IMAGE_NAME_FRONT: ${{ github.repository }}/orion-microcrm-front
+
+jobs:
+  build-back:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Update Gradle permission
+        working-directory: back
+        run: chmod +x ./gradlew
+
+      - name: Build with Gradle Wrapper
+        working-directory: back
+        run: ./gradlew clean assemble
+
+  build-front:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Dependency installation
+        working-directory: front
+        run: npm install
+
+      - name: Build with npm
+        working-directory: front
+        run: npm run build
+
+  test-back:
+    needs: build-back
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Update Gradle permission
+        working-directory: back
+        run: chmod +x ./gradlew
+
+      - name: Test with Gradle Wrapper
+        working-directory: back
+        run: ./gradlew test
+
+      - name: Upload back test artefacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-back-artefact
+          path: back/build/reports/tests/
+
+  test-front:
+    needs: build-front
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      - name: Dependency installation
+        working-directory: front
+        run: npm install
+
+      - name: Test with npm
+        working-directory: front
+        run: npm run test-cov
+
+      - name: Upload front test artefacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-front-artefact
+          path: front/coverage
+
+  containerization:
+    needs: [test-back, test-front]
+    permissions:
+      packages: write
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Extract Docker back metadata
+        id: meta-back
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACK }}
+
+      - name: Build docker back image
+        run: docker build --target back -t ${{ steps.meta-back.outputs.tags }} .
+
+      - name: Extract Docker front metadata
+        id: meta-front
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_FRONT }}
+
+      - name: Build docker front image
+        run: docker build --target front -t ${{ steps.meta-front.outputs.tags }} .
+
+      - name: Log into registry ${{ env.REGISTRY }}
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push docker back image
+        run: docker push ${{ steps.meta-back.outputs.tags }}
+
+      - name: Push docker front image
+        run: docker push ${{ steps.meta-front.outputs.tags }}
+
+  deploy:
+    needs: containerization
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Pull docker images
+        #        run: docker compose pull
+        run: echo "docker compose pull"
+
+      - name: Start docker compose
+        #        run: docker compose up
+        run: echo "docker compose up"
+
+  dora:
+    needs:
+      [deploy, containerization, test-back, test-front, build-front, build-back]
+    runs-on: ubuntu-22.04
+    if: always()
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Generate DORA log file
+        run: |
+          ID=$(uuidgen)
+          FILE=dora-$ID.ndjson
+
+          COMMIT_EVENT="{\"type\":\"commit\",\"commitId\":\"$GITHUB_SHA\",\"datetime\":\"$(git log -1 --format=%cI)\"}"
+
+          STATUS="success"
+          if [ "${{ needs.build-back.result }}" != "success" ] || \
+          [ "${{ needs.build-front.result }}" != "success" ] || \
+          [ "${{ needs.test-back.result }}" != "success" ] || \
+          [ "${{ needs.test-front.result }}" != "success" ] || \
+          [ "${{ needs.containerization.result }}" != "success" ] || \
+          [ "${{ needs.deploy.result }}" != "success" ] || \
+          [ "${{ job.status }}" != "success" ]; then
+          STATUS="failure"
+          fi
+
+          DEPLOYMENT_EVENT="{\"type\":\"deployment\",\"commitId\":\"$GITHUB_SHA\",\"datetime\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"status\":\"$STATUS\"}"
+
+          INCIDENT_EVENT="null"
+          if [ "$STATUS" != "success" ]; then
+            START=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            INCIDENT_EVENT="{\"type\":\"incident\",\"datetime\":\"$START\",\"commitId\":\"$GITHUB_SHA\"}"
+          fi
+
+          echo "$COMMIT_EVENT" >> $FILE
+          echo "$DEPLOYMENT_EVENT" >> $FILE
+          if [ "$STATUS" != "success" ]; then
+          echo "$INCIDENT_EVENT" >> $FILE
+          fi
+
+          cat $FILE
+
+      - name: Upload DORA artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: dora-log
+          path: dora-*.ndjson
