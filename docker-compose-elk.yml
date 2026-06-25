@@ -26,6 +26,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
+      - back-volume:/app/logs/spring
+      - caddy-volume:/app/logs/caddy
     ports:
       - "5000:5000"
     depends_on:
@@ -33,3 +35,9 @@ services:
 
 volumes:
   elasticsearch-volume:
+  back-volume:
+    external: true
+    name: back-volume
+  caddy-volume:
+    external: true
+    name: caddy-volume

@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile
       target: front
     image: orion-microcrm-front:latest
+    volumes:
+      - caddy-volume:/app/log/
     ports:
       - "80:80"
     restart: unless-stopped
@@ -17,6 +19,14 @@ services:
       dockerfile: Dockerfile
       target: back
     image: orion-microcrm-back:latest
+    volumes:
+      - back-volume:/app/logs
     ports:
       - "8080:8080"
     restart: unless-stopped
+
+volumes:
+  back-volume:
+    name: back-volume
+  caddy-volume:
+    name: caddy-volume
