@@ -154,7 +154,7 @@ docker run -it --rm -p 8080:8080 -p 80:80 -p 443:443 orion-microcrm-standalone:l
 
 L'application sera disponible sur https://localhost et l'API sur http://localhost:8080.
 
-Commands:
+Commands :
 
 ```sh
 # start elk stack
