@@ -30,3 +30,7 @@ volumes:
     name: back-volume
   caddy-volume:
     name: caddy-volume
+
+networks:
+  default:
+    name: observability
