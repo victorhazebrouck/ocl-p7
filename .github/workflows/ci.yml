@@ -3,6 +3,8 @@ name: ci.yml
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
 env:
   IMAGE_NAME_BACK: ${{ github.repository }}/orion-microcrm-back
