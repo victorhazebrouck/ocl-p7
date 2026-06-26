@@ -43,7 +43,7 @@ java -jar build/libs/microcrm-0.0.1-SNAPSHOT.jar
 ```sh
 # front
 cd front
-CHROME_BIN=</path/to/google/chrome> npm test
+npm run test
 
 # back
 cd back
