@@ -62,8 +62,8 @@ docker compose up --build
 
 #### Links:
 
-- dashboard: `http://localhost:5601/`
+- dashboard: [http://localhost:5601](http://localhost:5601)
 
-- front: `http://localhost`
+- front: [http://localhost](http://localhost)
 
-- api: `http://localhost:8080`
+- api: [http://localhost:8080](http://localhost:8080)
