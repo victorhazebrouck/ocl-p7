@@ -42,10 +42,6 @@ Valeur observée :
 
 #### Temps de build
 
-back: 1m 12s
-
-#### Temps de build
-
 - Back: 1m 12s
 - Front: 43s
 
