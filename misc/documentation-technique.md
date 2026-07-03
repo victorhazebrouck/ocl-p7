@@ -402,7 +402,7 @@ plus rapide et plus constant. Aucun écart anormal ou dégradation progressive d
 
 #### Dashboards
 
-TODO
+![kibana](./screenshots/kibana-dashboard.png)
 
 #### Alertes
 
