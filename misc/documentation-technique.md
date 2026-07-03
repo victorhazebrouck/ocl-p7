@@ -336,7 +336,7 @@ Le pipeline actuel présente également plusieurs zones de risques potentiels:
 
 #### Lead Time
 
-Le Lead Time observé est de **875 secondes**, correspondant au temps écoulé entre le commit et le
+Le `Lead Time` observé est de `875 secondes`, correspondant au temps écoulé entre le commit et le
 déploiement effectif en environnement cible. Cette valeur inclut les étapes de build, tests,
 analyse qualité, conteneurisation et déploiement.
 
@@ -346,7 +346,7 @@ Non applicable pour le moment, car project pas en production.
 
 #### Mean Time To Restore
 
-Non applicable pour le moment, car pas de breaking features.
+Le `Lead Time` observé est de `875 secondes` dans le pire des cas, correspondant au temps de build.
 
 #### Change Failure Rate
 
@@ -357,7 +357,7 @@ nécessitant un rollback ou une correction immédiate.
 Change Failure Rate = (nok / ok) × 100
 ```
 
-Non applicable pour le moment, car pas de features.
+Non applicable pour le moment, car pas de features, donc pas de failures.
 
 ### 6.2 KPI personnalisés
 
